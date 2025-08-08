@@ -14,11 +14,11 @@ func (w *wintun) Close() error {
 }
 
 func (w *wintun) Write(b []byte) (int, error) {
-	return w.dev.Write(b, 0)
+	return w.dev.Write([][]byte{b}, 0)
 }
 
 func (w *wintun) Read(b []byte) (int, error) {
-	return w.dev.Read(b, 0)
+	return w.dev.Read([][]byte{b}, []int{len(b)}, 0)
 }
 
 func openDev(config Config) (ifce *Interface, err error) {
