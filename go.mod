@@ -1,4 +1,4 @@
-module github.com/mudler/water
+module github.com/l0caldadmin/water
 
 go 1.23.1
 
