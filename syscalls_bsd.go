@@ -5,9 +5,13 @@ package water
 import (
 	"errors"
 	"os"
+	"strings"
 )
 
 func openDev(config Config) (ifce *Interface, err error) {
+	if len(config.Name) < 8 {
+		return nil, errors.New("TUN/TAP name must be in format /dev/tunX or /dev/tapX")
+	}
 	switch config.Name[:8] {
 	case "/dev/tap":
 		return newTAP(config)
@@ -19,8 +23,8 @@ func openDev(config Config) (ifce *Interface, err error) {
 }
 
 func newTAP(config Config) (ifce *Interface, err error) {
-	if config.Name[:8] != "/dev/tap" {
-		panic("TUN/TAP name must be in format /dev/tunX or /dev/tapX")
+	if !strings.HasPrefix(config.Name, "/dev/tap") {
+		return nil, errors.New("TUN/TAP name must be in format /dev/tunX or /dev/tapX")
 	}
 
 	file, err := os.OpenFile(config.Name, os.O_RDWR, 0)
@@ -33,8 +37,8 @@ func newTAP(config Config) (ifce *Interface, err error) {
 }
 
 func newTUN(config Config) (ifce *Interface, err error) {
-	if config.Name[:8] != "/dev/tun" {
-		panic("TUN/TAP name must be in format /dev/tunX or /dev/tapX")
+	if !strings.HasPrefix(config.Name, "/dev/tun") {
+		return nil, errors.New("TUN/TAP name must be in format /dev/tunX or /dev/tapX")
 	}
 
 	file, err := os.OpenFile(config.Name, os.O_RDWR, 0)

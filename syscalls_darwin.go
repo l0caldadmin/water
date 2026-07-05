@@ -101,6 +101,11 @@ func openDevSystem(config Config) (ifce *Interface, err error) {
 	if fd, err = syscall.Socket(syscall.AF_SYSTEM, syscall.SOCK_DGRAM, 2); err != nil {
 		return nil, fmt.Errorf("error in syscall.Socket: %v", err)
 	}
+	defer func() {
+		if err != nil {
+			syscall.Close(fd)
+		}
+	}()
 
 	var ctlInfo = &struct {
 		ctlID   uint32
@@ -176,6 +181,11 @@ func openDevTunTapOSX(config Config) (ifce *Interface, err error) {
 		"/dev/"+config.Name, os.O_RDWR|syscall.O_NONBLOCK, 0); err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err != nil {
+			syscall.Close(fd)
+		}
+	}()
 	// Note that we are not setting NONBLOCK on the fd itself since it breaks tuntaposx
 	// see https://sourceforge.net/p/tuntaposx/bugs/6/
 
@@ -183,6 +193,11 @@ func openDevTunTapOSX(config Config) (ifce *Interface, err error) {
 	if socketFD, err = syscall.Socket(syscall.AF_SYSTEM, syscall.SOCK_DGRAM, 2); err != nil {
 		return nil, fmt.Errorf("error in syscall.Socket: %v", err)
 	}
+	defer func() {
+		if err != nil {
+			syscall.Close(socketFD)
+		}
+	}()
 	var ifReq = &struct {
 		ifName    [16]byte
 		ifruFlags int16
@@ -199,6 +214,7 @@ func openDevTunTapOSX(config Config) (ifce *Interface, err error) {
 		return nil, fmt.Errorf("error in syscall.Syscall(syscall.SYS_IOCTL, ...): %v", err)
 	}
 	syscall.Close(socketFD)
+	socketFD = -1
 
 	return &Interface{
 		isTAP:           config.DeviceType == TAP,

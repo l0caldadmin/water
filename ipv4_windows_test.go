@@ -27,6 +27,9 @@ func setupIfce(t *testing.T, ipNet net.IPNet, dev string) {
 }
 
 func teardownIfce(t *testing.T, ifce *Interface) {
+	if ifce == nil {
+		return
+	}
 	if err := ifce.Close(); err != nil {
 		t.Fatal(err)
 	}
