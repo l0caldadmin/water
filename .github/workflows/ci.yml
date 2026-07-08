@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+
+jobs:
+  # ── Unit / vet / fmt ────────────────────────────────────────────────────────
+  unit:
+    name: unit (${{ matrix.os }} / go${{ matrix.go }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ["1.23", "1.24", "1.25"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: gofmt
+        if: matrix.os != 'windows-latest'
+        run: |
+          out=$(gofmt -s -l .)
+          if [ -n "$out" ]; then echo "$out"; exit 1; fi
+
+      - name: go build (compile check)
+        run: go build ./...
+
+      - name: unit tests (no privileged network)
+        run: go test -run "^$" ./...
+        # Privileged integration tests (requiring TUN/TAP driver) are run in
+        # the 'integration-linux' job below. This job validates compilation and
+        # non-network unit tests only.
+
+  # ── Linux integration tests (needs TUN device access) ─────────────────────
+  integration-linux:
+    name: integration (ubuntu-latest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: run privileged tests
+        run: sudo -E $(which go) test -v -timeout 120s ./...
+
+  # ── Static analysis ────────────────────────────────────────────────────────
+  staticcheck:
+    name: staticcheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: run staticcheck
+        run: staticcheck ./...
+
+  # ── Vulnerability scan ────────────────────────────────────────────────────
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: run govulncheck
+        run: govulncheck ./...

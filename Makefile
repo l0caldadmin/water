@@ -1,23 +1,33 @@
-.phony: default ci test lint vet gofmt
+.PHONY: default ci unit integration lint vet gofmt staticcheck vulncheck
 
 
 default:
-	echo 'This make file is for CI.'
-	exit 1
+	@echo 'Usage: make [unit|integration|lint|vet|gofmt|staticcheck|vulncheck|ci]'
 
-ci: test lint vet gofmt
+# Fast, non-privileged checks suitable for any environment.
+ci: vet gofmt staticcheck unit
 
-test: water.test
-	sudo ./water.test -test.v
+# Compile-check + non-network unit tests.
+unit:
+	go test -run "^$$" ./...
 
-lint:
-	golint -set_exit_status
+# Privileged integration tests requiring a TUN/TAP kernel device.
+# Run as: sudo make integration
+integration:
+	go test -v -timeout 120s ./...
 
 vet:
-	go vet .
+	go vet ./...
 
 gofmt:
-	gofmt -s -e -l .
+	@out=$$(gofmt -s -l .); if [ -n "$$out" ]; then echo "$$out"; exit 1; fi
 
-water.test: *.go
-	go test -c
+# staticcheck replaces the deprecated golint.
+# Install once: go install honnef.co/go/tools/cmd/staticcheck@latest
+staticcheck:
+	staticcheck ./...
+
+# Scan reachable vulnerabilities in dependencies.
+# Install once: go install golang.org/x/vuln/cmd/govulncheck@latest
+vulncheck:
+	govulncheck ./...

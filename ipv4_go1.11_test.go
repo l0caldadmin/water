@@ -11,7 +11,7 @@ import (
 func TestCloseUnblockPendingRead(t *testing.T) {
 	ifce, err := New(Config{DeviceType: TUN})
 	if err != nil {
-		t.Fatalf("creating TUN error: %v\n", err)
+		t.Skipf("skipping: TUN prerequisite unavailable: %v", err)
 	}
 
 	c := make(chan struct{})
